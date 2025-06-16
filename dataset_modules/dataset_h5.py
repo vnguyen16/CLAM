@@ -3,6 +3,8 @@ import pandas as pd
 
 from torch.utils.data import Dataset
 from torchvision import transforms
+import torch
+import os
 
 from PIL import Image
 import h5py
@@ -87,6 +89,52 @@ class Whole_Slide_Bag_FP(Dataset):
 
 		img = self.roi_transforms(img)
 		return {'img': img, 'coord': coord}
+
+# Adding dataset class to handle patches
+class Npy_Patch_Bag(Dataset):
+    def __init__(self, file_path, patch_dir, img_transforms=None):
+        """
+        Args:
+            file_path (string): Path to the .h5 file containing 'coords'
+            patch_dir (string): Directory containing .npy patches (one folder per slide)
+            img_transforms (callable): Torch transform (e.g. normalization, ToTensor)
+        """
+        self.file_path = file_path
+        self.patch_dir = patch_dir
+        self.roi_transforms = img_transforms
+
+        with h5py.File(self.file_path, "r") as f:
+            self.coords = f['coords'][:]
+        
+        self.length = len(self.coords)
+
+    def __len__(self):
+        return self.length
+
+    def __getitem__(self, idx):
+        x, y = self.coords[idx]
+        patch_name = f"patch_{idx}_x{x}_y{y}.npy"
+        patch_path = os.path.join(self.patch_dir, patch_name)
+
+        patch = np.load(patch_path)
+
+        # If shape is (C, H, W), transpose to (H, W, C)
+        if patch.shape[0] == 3:
+            patch = patch.transpose(1, 2, 0)
+
+        patch = patch.astype(np.uint8)
+
+        # Convert to PIL Image
+        patch = Image.fromarray(patch)
+
+        # Apply torchvision transforms
+        if self.roi_transforms:
+            patch = self.roi_transforms(patch)
+
+        return {'img': patch, 'coord': self.coords[idx]}
+
+	
+# ---------------------
 
 class Dataset_All_Bags(Dataset):
 
