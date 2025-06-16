@@ -2,3 +2,4 @@
 __pycache__/
 notebooks
 *.h5
+*.pt
