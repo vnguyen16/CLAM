@@ -10,13 +10,13 @@ import timm
 from torch.utils.data import DataLoader
 from PIL import Image
 import h5py
-import openslide
+# import openslide
 from tqdm import tqdm
 
 import numpy as np
 
 from utils.file_utils import save_hdf5
-from dataset_modules.dataset_h5 import Dataset_All_Bags, Whole_Slide_Bag_FP
+from dataset_modules.dataset_h5 import Dataset_All_Bags, Whole_Slide_Bag_FP, Npy_Patch_Bag
 from models import get_encoder
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
@@ -83,9 +83,18 @@ if __name__ == '__main__':
 	loader_kwargs = {'num_workers': 8, 'pin_memory': True} if device.type == "cuda" else {}
 
 	for bag_candidate_idx in tqdm(range(total)):
-		slide_id = bags_dataset[bag_candidate_idx].split(args.slide_ext)[0]
+		# slide_id = bags_dataset[bag_candidate_idx].split(args.slide_ext)[0]
+
+		# If slide_ext is provided, use it to extract slide_id ----
+		if args.slide_ext:
+			slide_id = bags_dataset[bag_candidate_idx].split(args.slide_ext)[0]
+		else:
+			slide_id = bags_dataset[bag_candidate_idx]
+		# -------------------------------------------------------
+
 		bag_name = slide_id+'.h5'
-		h5_file_path = os.path.join(args.data_h5_dir, 'patches', bag_name)
+		h5_file_path = os.path.join(args.data_h5_dir, 'patches', bag_name) # og
+		h5_file_path = os.path.join(args.data_h5_dir, bag_name)
 		slide_file_path = os.path.join(args.data_slide_dir, slide_id+args.slide_ext)
 		print('\nprogress: {}/{}'.format(bag_candidate_idx, total))
 		print(slide_id)
@@ -96,10 +105,18 @@ if __name__ == '__main__':
 
 		output_path = os.path.join(args.feat_dir, 'h5_files', bag_name)
 		time_start = time.time()
-		wsi = openslide.open_slide(slide_file_path)
-		dataset = Whole_Slide_Bag_FP(file_path=h5_file_path, 
-							   		 wsi=wsi, 
-									 img_transforms=img_transforms)
+		# wsi = openslide.open_slide(slide_file_path)
+		# dataset = Whole_Slide_Bag_FP(file_path=h5_file_path, 
+		# 					   		 wsi=wsi, 
+		# 							 img_transforms=img_transforms)
+
+		# replacing with Npy_Patch_Bag -----------------
+		# Extract label from slide_id prefix (e.g., "FA 100 B1" → "FA")
+		label = slide_id.split()[0]  # 'FA' or 'PT'
+		patch_slide_dir = os.path.join(args.data_slide_dir, label, slide_id)
+		# patch_slide_dir = os.path.join(args.data_slide_dir, slide_id)
+		dataset = Npy_Patch_Bag(file_path=h5_file_path, patch_dir=patch_slide_dir, img_transforms=img_transforms)
+		# -------------------------------------
 
 		loader = DataLoader(dataset=dataset, batch_size=args.batch_size, **loader_kwargs)
 		output_file_path = compute_w_loader(output_path, loader = loader, model = model, verbose = 1)
