@@ -14,7 +14,7 @@ from sklearn.metrics import roc_auc_score, roc_curve, auc
 from sklearn.preprocessing import label_binarize
 import matplotlib.pyplot as plt
 
-def initiate_model(args, ckpt_path, device='cuda'):
+def initiate_model(args, ckpt_path, device='cpu'):
     print('Init Model')    
     model_dict = {"dropout": args.drop_out, 'n_classes': args.n_classes, "embed_dim": args.embed_dim}
     
@@ -71,6 +71,8 @@ def summary(model, loader, args):
         data, label = data.to(device), label.to(device)
         slide_id = slide_ids.iloc[batch_idx]
         with torch.no_grad():
+            data = data.to(next(model.parameters()).device) # added line to move data to the same device as model
+
             logits, Y_prob, Y_hat, _, results_dict = model(data)
         
         acc_logger.log(Y_hat, label)

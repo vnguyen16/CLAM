@@ -140,6 +140,7 @@ def nth(iterator, n, default=None):
 		return next(islice(iterator,n, None), default)
 
 def calculate_error(Y_hat, Y):
+	Y_hat = Y_hat.to(Y.device) # added line to ensure Y_hat is on the same device as Y
 	error = 1. - Y_hat.float().eq(Y.float()).float().mean().item()
 
 	return error

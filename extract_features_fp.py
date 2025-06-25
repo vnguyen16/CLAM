@@ -20,6 +20,7 @@ from dataset_modules.dataset_h5 import Dataset_All_Bags, Whole_Slide_Bag_FP, Npy
 from models import get_encoder
 
 device = torch.device('cuda') if torch.cuda.is_available() else torch.device('cpu')
+print(f'Using device: {device}')
 
 def compute_w_loader(output_path, loader, model, verbose = 0):
 	"""

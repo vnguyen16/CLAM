@@ -32,5 +32,5 @@ def batch_generate_coords_h5(base_dir, output_dir):
 
 # Example usage
 base_patch_dir = r"C:\Users\Vivian\Documents\CONCH\all_patches\patches_5x"
-output_h5_dir = r"C:\Users\Vivian\Documents\CLAM\CLAM\output_h5\5x"
+output_h5_dir = r"C:\Users\Vivian\Documents\CLAM\CLAM\output_h5\uni_5x"
 batch_generate_coords_h5(base_patch_dir, output_h5_dir)
