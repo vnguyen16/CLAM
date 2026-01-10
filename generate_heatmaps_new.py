@@ -39,18 +39,33 @@ def generate_attention_scores(h5_dir, ckpt_path, output_dir, model_type='clam_sb
 
         # Forward pass through CLAM
         with torch.no_grad():
-            if isinstance(model, (CLAM_SB, CLAM_MB)):
+            # if isinstance(model, (CLAM_SB, CLAM_MB)): # this works to get attention scores 
+            #     logits, Y_prob, Y_hat, A, _ = model(features)
+            #     if isinstance(model, CLAM_MB):
+            #         A = A[Y_hat.item()]
+            #     attention_scores = A.view(-1, 1).cpu().numpy()
+            
+            if type(model) is CLAM_SB:
                 logits, Y_prob, Y_hat, A, _ = model(features)
-                if isinstance(model, CLAM_MB):
-                    A = A[Y_hat.item()]
-                attention_scores = A.view(-1, 1).cpu().numpy()
+                # attention_scores = A.view(-1, 1).cpu().numpy()
+                attention_scores = A.reshape(-1, 1).cpu().numpy()
+                asset_dict = {'attention_scores': attention_scores, 'coords': coords}
+
+            elif type(model) is CLAM_MB:
+                logits, Y_prob, Y_hat, A_all, _ = model(features)
+                A_all = A_all.cpu().numpy()  # shape (n_classes, n_patches)
+                asset_dict = {'coords': coords}
+                for class_idx in range(n_classes):
+                    scores = A_all[class_idx].reshape(-1, 1)  # fix reshaping here
+                    asset_dict[f'attention_scores_class{class_idx}'] = scores
             else:
                 raise NotImplementedError("Model type not supported.")
 
         # Save to new h5
         output_path = os.path.join(output_dir, h5_file)
-        save_hdf5(output_path, {'attention_scores': attention_scores, 'coords': coords}, mode='w')
+        # save_hdf5(output_path, {'attention_scores': attention_scores, 'coords': coords}, mode='w') # for og CLAM_SB
 
+        save_hdf5(output_path, asset_dict, mode='w') # for CLAM_MB
         print(f"✅ Saved attention scores to: {output_path}")
 
 if __name__ == "__main__":

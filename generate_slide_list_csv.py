@@ -75,13 +75,67 @@ def generate_clam_dataset_csv(pt_dir, output_csv, label_map={"FA": 0, "PT": 1}):
     print(f"✅ CSV saved with {len(records)} entries at: {output_csv}")
 
 
+def generate_breakhis_csv(pt_dir, output_csv, label_map={"F": 0, "PT": 1}):
+    """
+    Generate CLAM-compatible CSV for BreakHis from a flat pt_files directory.
+
+    Args:
+        pt_dir (str): Directory containing .pt files (e.g., SOB_B_F_14-9133_40X.pt)
+        output_csv (str): Output CSV file path
+        label_map (dict): Mapping of tumor subtype code (F, PT) to integer labels
+    """
+    records = []
+    for file in os.listdir(pt_dir):
+        if not file.endswith('.pt'):
+            continue
+
+        slide_id = os.path.splitext(file)[0]  # e.g., SOB_B_F_14-9133_40X
+        parts = slide_id.split('_')  # ['SOB', 'B', 'F', '14-9133', '40X']
+
+        if len(parts) < 4:
+            print(f"⚠️ Skipping malformed slide ID: {slide_id}")
+            continue
+
+        subclass = parts[2]  # 'F' or 'PT'
+        case_id = "_".join(parts[:4])  # e.g., SOB_B_F_14-9133
+
+        label = label_map.get(subclass)
+        if label is None:
+            print(f"⚠️ Unknown subclass: {subclass} in slide {slide_id}")
+            continue
+
+        records.append({
+            "case_id": case_id,
+            "slide_id": slide_id,
+            "label": label
+        })
+
+    # Save CSV
+    with open(output_csv, mode='w', newline='') as f:
+        writer = csv.DictWriter(f, fieldnames=['case_id', 'slide_id', 'label'])
+        writer.writeheader()
+        writer.writerows(records)
+
+    print(f"✅ Saved {len(records)} entries to {output_csv}")
+
+
 if __name__ == "__main__":
-    # h5_input_dir = r"C:\Users\Vivian\Documents\CLAM\CLAM\output_h5\5x"
-    # output_csv = "5x_slide_list.csv"
+    # # generate slide_list.csv from .h5 files
+    # h5_input_dir = r"C:\Users\Vivian\Documents\CLAM\CLAM\output_h5\BreaKHis\400X"
+    # output_csv = r"C:\Users\Vivian\Documents\CLAM\CLAM\output_h5\BreaKHis\breakhis_400x_slide_list.csv"
     # generate_slide_list_csv(h5_input_dir, output_csv)
 
-    pt_dir = r"C:\Users\Vivian\Documents\CLAM\CLAM\FEATURES_DIR_5x\pt_files"
-    output_csv = "C:/Users/Vivian/Documents/CLAM/CLAM/dataset_csv/fa_vs_pt.csv"
+    # -------------------------------------
+    # # generate dataset csv for CLAM
+    # pt_dir = r"C:\Users\Vivian\Documents\CLAM\CLAM\FEATURES_DIR_5x\breakhis_uni\40x\pt_files"
+    # output_csv = "C:/Users/Vivian/Documents/CLAM/CLAM/dataset_csv/breakhis_fa_pt.csv"
+    # generate_clam_dataset_csv(pt_dir, output_csv)
 
-    generate_clam_dataset_csv(pt_dir, output_csv)
+    # -------------------------------------
+    # generate dataset csv for BreakHis patches
+    generate_breakhis_csv(
+    pt_dir=r"C:\Users\Vivian\Documents\CLAM\CLAM\FEATURES_DIR_5x\breakhis_uni\40x\pt_files",
+    output_csv="C:/Users/Vivian/Documents/CLAM/CLAM/dataset_csv/breakhis_fa_pt.csv"
+    )
+
 
